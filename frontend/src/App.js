@@ -43,7 +43,7 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8080';
+const API_BASE = 'http://localhost:8080';
 
 function App() {
   const [chitties, setChitties] = useState([]);
