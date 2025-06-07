@@ -20,14 +20,14 @@ public class MonthlySlipController {
     @Autowired
     private MonthlySlipService monthlySlipService;
 
-    @ApiOperation(value = "Get all slips for a chitty")
+    @Operation(summary = "Get all slips for a chitty")
     @GetMapping("/chitty/{chittiId}")
     public ResponseEntity<ApiResponse<List<MonthlySlip>>> getSlipsByChittiId(@PathVariable String chittiId) {
         List<MonthlySlip> slips = monthlySlipService.getSlipsByChittiId(chittiId);
         return ResponseEntity.ok(ApiResponse.success(slips));
     }
 
-    @ApiOperation(value = "Get slip for specific chitty and month")
+    @Operation(summary = "Get slip for specific chitty and month")
     @GetMapping("/chitty/{chittiId}/month/{month}")
     public ResponseEntity<ApiResponse<MonthlySlip>> getSlipByChittiAndMonth(@PathVariable String chittiId, @PathVariable int month) {
         Optional<MonthlySlip> slip = monthlySlipService.getSlipByChittiIdAndMonth(chittiId, month);
@@ -37,7 +37,7 @@ public class MonthlySlipController {
         return ResponseEntity.notFound().build();
     }
 
-    @ApiOperation(value = "Generate monthly slip for a chitty")
+    @Operation(summary = "Generate monthly slip for a chitty")
     @PostMapping("/generate")
     public ResponseEntity<ApiResponse<MonthlySlip>> generateMonthlySlip(@RequestParam String chittiId, @RequestParam int month) {
         try {
@@ -51,7 +51,7 @@ public class MonthlySlipController {
         }
     }
 
-    @ApiOperation(value = "Mark member as lifted in slip")
+    @Operation(summary = "Mark member as lifted in slip")
     @PostMapping("/{slipId}/lift")
     public ResponseEntity<ApiResponse<MonthlySlip>> markMemberAsLifted(@PathVariable String slipId, @RequestParam String memberId) {
         try {
@@ -65,7 +65,7 @@ public class MonthlySlipController {
         }
     }
 
-    @ApiOperation(value = "Mark payment status")
+    @Operation(summary = "Mark payment status")
     @PostMapping("/{slipId}/payment")
     public ResponseEntity<ApiResponse<MonthlySlip>> markPayment(@PathVariable String slipId, @RequestParam String memberId, @RequestParam boolean isPaid) {
         try {
@@ -79,7 +79,7 @@ public class MonthlySlipController {
         }
     }
 
-    @ApiOperation(value = "Delete monthly slip")
+    @Operation(summary = "Delete monthly slip")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> deleteSlip(@PathVariable String id) {
         if (monthlySlipService.deleteSlip(id)) {
