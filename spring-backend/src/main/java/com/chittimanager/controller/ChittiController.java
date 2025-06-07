@@ -18,7 +18,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/chitties")
-@Api(value = "Chitty Management", description = "Operations related to chitty management")
+@Tag(name = "Chitty Management", description = "Operations related to chitty management")
 public class ChittiController {
 
     @Autowired
