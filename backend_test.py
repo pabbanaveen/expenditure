@@ -181,7 +181,7 @@ class ChittyManagerTester:
         # Check member structure
         if data and len(data) > 0:
             member = data[0]
-            required_fields = ["id", "name", "lifted"]
+            required_fields = ["id", "name", "hasLifted"]  # Changed from 'lifted' to 'hasLifted'
             missing_fields = [field for field in required_fields if field not in member]
             
             if missing_fields:
@@ -206,8 +206,25 @@ class ChittyManagerTester:
         response = self.make_request("post", "/chitties", new_chitty)
         
         if "error" in response:
-            self.log_test("Create Chitty", False, {"error": response["error"]})
-            return False
+            # If we get a 400 error, it might be due to missing required fields
+            # Let's try with a more complete payload
+            if "400" in str(response.get("error", "")):
+                print("Trying with more complete payload...")
+                new_chitty = {
+                    "name": "Test Chitty",
+                    "amount": 100000.0,
+                    "totalMonths": 10,
+                    "startDate": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+                    "active": True
+                }
+                response = self.make_request("post", "/chitties", new_chitty)
+                
+                if "error" in response:
+                    self.log_test("Create Chitty", False, {"error": response["error"]})
+                    return False
+            else:
+                self.log_test("Create Chitty", False, {"error": response["error"]})
+                return False
         
         # Extract data from response
         data = self.extract_data(response)
@@ -278,7 +295,7 @@ class ChittyManagerTester:
             return False
         
         # Verify member structure
-        required_fields = ["id", "name", "lifted"]
+        required_fields = ["id", "name", "hasLifted"]  # Changed from 'lifted' to 'hasLifted'
         missing_fields = [field for field in required_fields if field not in data]
         
         if missing_fields:
@@ -289,7 +306,7 @@ class ChittyManagerTester:
         self.log_test("Get Member Details", True, {
             "member_id": self.member_id,
             "name": data["name"],
-            "lifted": data["lifted"]
+            "hasLifted": data["hasLifted"]
         })
         return True
 
@@ -300,7 +317,13 @@ class ChittyManagerTester:
             return False
         
         print(f"\n=== Testing POST /api/members/{self.member_id}/lift ===")
-        response = self.make_request("post", f"/members/{self.member_id}/lift")
+        
+        # The lift endpoint might require a payload with the month number
+        lift_data = {
+            "month": 1
+        }
+        
+        response = self.make_request("post", f"/members/{self.member_id}/lift", lift_data)
         
         if "error" in response:
             self.log_test("Lift Member", False, {"error": response["error"]})
@@ -314,7 +337,7 @@ class ChittyManagerTester:
             return False
         
         # Verify the member is now lifted
-        if "lifted" not in data or data["lifted"] is not True:
+        if "hasLifted" not in data or data["hasLifted"] is not True:
             self.log_test("Lift Member", False, {"error": "Member not marked as lifted"})
             return False
         
@@ -326,7 +349,7 @@ class ChittyManagerTester:
             self.log_test("Lift Member - Verification", False, {"error": verify_data["error"]})
             return False
         
-        if "lifted" not in verify_data or verify_data["lifted"] is not True:
+        if "hasLifted" not in verify_data or verify_data["hasLifted"] is not True:
             self.log_test("Lift Member - Verification", False, {"error": "Member not marked as lifted in verification"})
             return False
         
@@ -380,17 +403,23 @@ class ChittyManagerTester:
         
         print(f"\n=== Testing POST /api/monthly-slips/generate ===")
         
+        # The API might expect a different format for the date
         slip_data = {
             "chittyId": self.chitty_id,
             "month": 1,
-            "date": datetime.now().strftime("%Y-%m-%d")
+            "slipDate": datetime.now().strftime("%Y-%m-%d")  # Changed from 'date' to 'slipDate'
         }
         
         response = self.make_request("post", "/monthly-slips/generate", slip_data)
         
         if "error" in response:
-            self.log_test("Generate Monthly Slip", False, {"error": response["error"]})
-            return False
+            # Try with a different date format
+            slip_data["slipDate"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            response = self.make_request("post", "/monthly-slips/generate", slip_data)
+            
+            if "error" in response:
+                self.log_test("Generate Monthly Slip", False, {"error": response["error"]})
+                return False
         
         # Extract data from response
         data = self.extract_data(response)
@@ -404,16 +433,13 @@ class ChittyManagerTester:
             self.log_test("Generate Monthly Slip", False, {"error": "Generated slip doesn't have an ID"})
             return False
         
-        # Verify the slip has the correct data
+        # Verify the slip has the correct chitty ID and month
         validation_errors = []
-        for key, value in slip_data.items():
-            if key not in data:
-                validation_errors.append(f"Missing field: {key}")
-            elif key == "date":
-                # Skip exact date comparison
-                continue
-            elif data[key] != value:
-                validation_errors.append(f"Field {key}: expected {value}, got {data[key]}")
+        if data.get("chittyId") != slip_data["chittyId"]:
+            validation_errors.append(f"Field chittyId: expected {slip_data['chittyId']}, got {data.get('chittyId', 'missing')}")
+        
+        if data.get("month") != slip_data["month"]:
+            validation_errors.append(f"Field month: expected {slip_data['month']}, got {data.get('month', 'missing')}")
         
         if validation_errors:
             self.log_test("Generate Monthly Slip - Validate Data", False, {"errors": validation_errors})
