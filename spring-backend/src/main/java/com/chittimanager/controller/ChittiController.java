@@ -27,7 +27,7 @@ public class ChittiController {
     @Autowired
     private MemberService memberService;
 
-    @ApiOperation(value = "Get all active chitties")
+    @Operation(summary = "Get all active chitties")
     @GetMapping
     public ResponseEntity<ApiResponse<List<Chitty>>> getAllChitties() {
         List<Chitty> chitties = chittiService.getAllActiveChitties();
