@@ -20,7 +20,7 @@ public class MemberController {
     @Autowired
     private MemberService memberService;
 
-    @ApiOperation(value = "Get member by ID")
+    @Operation(summary = "Get member by ID")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Member>> getMemberById(@PathVariable String id) {
         Optional<Member> member = memberService.getMemberById(id);
@@ -30,7 +30,7 @@ public class MemberController {
         return ResponseEntity.notFound().build();
     }
 
-    @ApiOperation(value = "Update member")
+    @Operation(summary = "Update member")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Member>> updateMember(@PathVariable String id, @RequestBody Member memberDetails) {
         try {
@@ -44,7 +44,7 @@ public class MemberController {
         }
     }
 
-    @ApiOperation(value = "Mark member as lifted")
+    @Operation(summary = "Mark member as lifted")
     @PostMapping("/{id}/lift")
     public ResponseEntity<ApiResponse<Member>> markMemberAsLifted(@PathVariable String id, @RequestParam int month) {
         try {
@@ -58,21 +58,21 @@ public class MemberController {
         }
     }
 
-    @ApiOperation(value = "Get lifted members of a chitty")
+    @Operation(summary = "Get lifted members of a chitty")
     @GetMapping("/chitty/{chittiId}/lifted")
     public ResponseEntity<ApiResponse<List<Member>>> getLiftedMembers(@PathVariable String chittiId) {
         List<Member> members = memberService.getLiftedMembers(chittiId);
         return ResponseEntity.ok(ApiResponse.success(members));
     }
 
-    @ApiOperation(value = "Get non-lifted members of a chitty")
+    @Operation(summary = "Get non-lifted members of a chitty")
     @GetMapping("/chitty/{chittiId}/non-lifted")
     public ResponseEntity<ApiResponse<List<Member>>> getNonLiftedMembers(@PathVariable String chittiId) {
         List<Member> members = memberService.getNonLiftedMembers(chittiId);
         return ResponseEntity.ok(ApiResponse.success(members));
     }
 
-    @ApiOperation(value = "Delete member")
+    @Operation(summary = "Delete member")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> deleteMember(@PathVariable String id) {
         if (memberService.deleteMember(id)) {
