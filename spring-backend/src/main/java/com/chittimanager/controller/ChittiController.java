@@ -34,7 +34,7 @@ public class ChittiController {
         return ResponseEntity.ok(ApiResponse.success(chitties));
     }
 
-    @ApiOperation(value = "Get chitty by ID")
+    @Operation(summary = "Get chitty by ID")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Chitty>> getChittiById(@PathVariable String id) {
         Optional<Chitty> chitty = chittiService.getChittiById(id);
@@ -44,7 +44,7 @@ public class ChittiController {
         return ResponseEntity.notFound().build();
     }
 
-    @ApiOperation(value = "Create a new chitty")
+    @Operation(summary = "Create a new chitty")
     @PostMapping
     public ResponseEntity<ApiResponse<Chitty>> createChitty(@Valid @RequestBody CreateChittiRequest request) {
         try {
@@ -65,7 +65,7 @@ public class ChittiController {
         }
     }
 
-    @ApiOperation(value = "Update chitty")
+    @Operation(summary = "Update chitty")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Chitty>> updateChitty(@PathVariable String id, @Valid @RequestBody CreateChittiRequest request) {
         try {
@@ -81,7 +81,7 @@ public class ChittiController {
         }
     }
 
-    @ApiOperation(value = "Delete chitty")
+    @Operation(summary = "Delete chitty")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> deleteChitty(@PathVariable String id) {
         if (chittiService.deleteChitty(id)) {
@@ -90,7 +90,7 @@ public class ChittiController {
         return ResponseEntity.notFound().build();
     }
 
-    @ApiOperation(value = "Add member to chitty")
+    @Operation(summary = "Add member to chitty")
     @PostMapping("/{id}/members")
     public ResponseEntity<ApiResponse<Chitty>> addMember(@PathVariable String id, @RequestParam String memberName) {
         try {
@@ -104,7 +104,7 @@ public class ChittiController {
         }
     }
 
-    @ApiOperation(value = "Remove member from chitty")
+    @Operation(summary = "Remove member from chitty")
     @DeleteMapping("/{id}/members/{memberId}")
     public ResponseEntity<ApiResponse<String>> removeMember(@PathVariable String id, @PathVariable String memberId) {
         if (chittiService.removeMemberFromChitty(id, memberId)) {
@@ -113,14 +113,14 @@ public class ChittiController {
         return ResponseEntity.notFound().build();
     }
 
-    @ApiOperation(value = "Get members of a chitty")
+    @Operation(summary = "Get members of a chitty")
     @GetMapping("/{id}/members")
     public ResponseEntity<ApiResponse<List<Member>>> getChittiMembers(@PathVariable String id) {
         List<Member> members = memberService.getMembersByChittiId(id);
         return ResponseEntity.ok(ApiResponse.success(members));
     }
 
-    @ApiOperation(value = "Search chitties by name")
+    @Operation(summary = "Search chitties by name")
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<Chitty>>> searchChitties(@RequestParam String query) {
         List<Chitty> chitties = chittiService.searchChitties(query);
