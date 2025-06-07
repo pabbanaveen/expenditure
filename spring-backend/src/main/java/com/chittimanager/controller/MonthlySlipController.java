@@ -14,7 +14,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/monthly-slips")
-@Api(value = "Monthly Slip Management", description = "Operations related to monthly slip management")
+@Tag(name = "Monthly Slip Management", description = "Operations related to monthly slip management")
 public class MonthlySlipController {
 
     @Autowired
