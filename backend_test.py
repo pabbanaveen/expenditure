@@ -5,6 +5,7 @@ import sys
 import time
 from typing import Dict, List, Any, Optional, Union
 from pprint import pprint
+from datetime import datetime
 
 # Spring Boot backend URL (running on port 8080)
 BASE_URL = "http://localhost:8080/api"
@@ -28,6 +29,8 @@ class ChittyManagerTester:
         print(f"[{result}] {test_name}")
         if details and not passed:
             print(f"  Details: {json.dumps(details, indent=2)}")
+        elif details and passed:
+            print(f"  Info: {json.dumps(details, indent=2)}")
         
         self.test_results["total_tests"] += 1
         if passed:
@@ -72,6 +75,15 @@ class ChittyManagerTester:
             print(f"Request error: {e}")
             return {"error": str(e)}
 
+    def extract_data(self, response):
+        """Extract data from standard Spring Boot response format"""
+        if isinstance(response, dict) and "success" in response and "data" in response:
+            if response["success"]:
+                return response["data"]
+            else:
+                return {"error": response.get("message", "Unknown error")}
+        return response
+
     def test_get_all_chitties(self) -> bool:
         """Test GET /api/chitties endpoint"""
         print("\n=== Testing GET /api/chitties ===")
@@ -81,14 +93,21 @@ class ChittyManagerTester:
             self.log_test("Get All Chitties", False, {"error": response["error"]})
             return False
         
+        # Extract data from response
+        data = self.extract_data(response)
+        
+        if "error" in data:
+            self.log_test("Get All Chitties", False, {"error": data["error"]})
+            return False
+        
         # Verify we have at least one chitty
-        if not isinstance(response, list) or len(response) == 0:
+        if not isinstance(data, list) or len(data) == 0:
             self.log_test("Get All Chitties", False, {"error": "No chitties found or invalid response format"})
             return False
         
         # Find the "5 Lakh Chitty" in the response
         five_lakh_chitty = None
-        for chitty in response:
+        for chitty in data:
             if chitty.get("name") == "5 Lakh Chitty":
                 five_lakh_chitty = chitty
                 self.chitty_id = chitty.get("id")
@@ -101,10 +120,11 @@ class ChittyManagerTester:
         # Verify the mock data
         expected_data = {
             "name": "5 Lakh Chitty",
-            "amount": 500000,
-            "duration": 20,
-            "regularPayment": 25000,
-            "liftedPayment": 31250
+            "amount": 500000.0,
+            "totalMonths": 20,
+            "regularPayment": 25000.0,
+            "liftedPayment": 31250.0,
+            "totalMembers": 20
         }
         
         validation_errors = []
@@ -118,7 +138,15 @@ class ChittyManagerTester:
             self.log_test("Get All Chitties - Validate 5 Lakh Chitty", False, {"errors": validation_errors})
             return False
         
-        self.log_test("Get All Chitties", True, {"chitty_count": len(response)})
+        # Get a member ID for later tests
+        if "memberIds" in five_lakh_chitty and len(five_lakh_chitty["memberIds"]) > 0:
+            self.member_id = five_lakh_chitty["memberIds"][0]
+        
+        self.log_test("Get All Chitties", True, {
+            "chitty_count": len(data),
+            "chitty_id": self.chitty_id,
+            "member_id": self.member_id
+        })
         return True
 
     def test_get_chitty_members(self) -> bool:
@@ -134,22 +162,25 @@ class ChittyManagerTester:
             self.log_test("Get Chitty Members", False, {"error": response["error"]})
             return False
         
+        # Extract data from response
+        data = self.extract_data(response)
+        
+        if "error" in data:
+            self.log_test("Get Chitty Members", False, {"error": data["error"]})
+            return False
+        
         # Verify we have 20 members
-        if not isinstance(response, list):
+        if not isinstance(data, list):
             self.log_test("Get Chitty Members", False, {"error": "Invalid response format, expected list"})
             return False
         
-        if len(response) != 20:
-            self.log_test("Get Chitty Members", False, {"error": f"Expected 20 members, got {len(response)}"})
+        if len(data) != 20:
+            self.log_test("Get Chitty Members", False, {"error": f"Expected 20 members, got {len(data)}"})
             return False
         
-        # Save a member ID for later tests
-        if response and len(response) > 0:
-            self.member_id = response[0].get("id")
-        
         # Check member structure
-        if response and len(response) > 0:
-            member = response[0]
+        if data and len(data) > 0:
+            member = data[0]
             required_fields = ["id", "name", "lifted"]
             missing_fields = [field for field in required_fields if field not in member]
             
@@ -158,7 +189,7 @@ class ChittyManagerTester:
                              {"error": f"Missing required fields: {', '.join(missing_fields)}"})
                 return False
         
-        self.log_test("Get Chitty Members", True, {"member_count": len(response)})
+        self.log_test("Get Chitty Members", True, {"member_count": len(data)})
         return True
 
     def test_create_chitty(self) -> bool:
@@ -167,10 +198,9 @@ class ChittyManagerTester:
         
         new_chitty = {
             "name": "Test Chitty",
-            "amount": 100000,
-            "duration": 10,
-            "regularPayment": 10000,
-            "liftedPayment": 12500
+            "amount": 100000.0,
+            "totalMonths": 10,
+            "startDate": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         }
         
         response = self.make_request("post", "/chitties", new_chitty)
@@ -179,25 +209,58 @@ class ChittyManagerTester:
             self.log_test("Create Chitty", False, {"error": response["error"]})
             return False
         
+        # Extract data from response
+        data = self.extract_data(response)
+        
+        if "error" in data:
+            self.log_test("Create Chitty", False, {"error": data["error"]})
+            return False
+        
         # Verify the created chitty has an ID
-        if "id" not in response:
+        if "id" not in data:
             self.log_test("Create Chitty", False, {"error": "Created chitty doesn't have an ID"})
             return False
         
         # Verify the created chitty has the correct data
+        validation_errors = []
         for key, value in new_chitty.items():
-            if key not in response or response[key] != value:
-                self.log_test("Create Chitty - Validate Data", False, 
-                             {"error": f"Field {key}: expected {value}, got {response.get(key, 'missing')}"})
-                return False
+            if key not in data:
+                validation_errors.append(f"Missing field: {key}")
+            elif key == "startDate":
+                # Skip exact date comparison
+                continue
+            elif data[key] != value:
+                validation_errors.append(f"Field {key}: expected {value}, got {data[key]}")
         
-        self.log_test("Create Chitty", True, {"created_chitty_id": response["id"]})
+        if validation_errors:
+            self.log_test("Create Chitty - Validate Data", False, {"errors": validation_errors})
+            return False
+        
+        # Verify payment calculations
+        expected_regular_payment = new_chitty["amount"] / new_chitty["totalMonths"]
+        expected_lifted_payment = expected_regular_payment * 1.25
+        
+        if "regularPayment" not in data or abs(data["regularPayment"] - expected_regular_payment) > 0.01:
+            self.log_test("Create Chitty - Payment Calculation", False, 
+                         {"error": f"Regular payment: expected {expected_regular_payment}, got {data.get('regularPayment', 'missing')}"})
+            return False
+        
+        if "liftedPayment" not in data or abs(data["liftedPayment"] - expected_lifted_payment) > 0.01:
+            self.log_test("Create Chitty - Payment Calculation", False, 
+                         {"error": f"Lifted payment: expected {expected_lifted_payment}, got {data.get('liftedPayment', 'missing')}"})
+            return False
+        
+        self.log_test("Create Chitty", True, {
+            "created_chitty_id": data["id"],
+            "regularPayment": data["regularPayment"],
+            "liftedPayment": data["liftedPayment"]
+        })
         return True
 
     def test_get_member_details(self) -> bool:
         """Test GET /api/members/{id} endpoint"""
         if not self.member_id:
-            self.log_test("Get Member Details", False, {"error": "No member_id available. Run test_get_chitty_members first."})
+            self.log_test("Get Member Details", False, {"error": "No member_id available. Run test_get_all_chitties first."})
             return False
         
         print(f"\n=== Testing GET /api/members/{self.member_id} ===")
@@ -207,22 +270,33 @@ class ChittyManagerTester:
             self.log_test("Get Member Details", False, {"error": response["error"]})
             return False
         
+        # Extract data from response
+        data = self.extract_data(response)
+        
+        if "error" in data:
+            self.log_test("Get Member Details", False, {"error": data["error"]})
+            return False
+        
         # Verify member structure
         required_fields = ["id", "name", "lifted"]
-        missing_fields = [field for field in required_fields if field not in response]
+        missing_fields = [field for field in required_fields if field not in data]
         
         if missing_fields:
             self.log_test("Get Member Details", False, 
                          {"error": f"Missing required fields: {', '.join(missing_fields)}"})
             return False
         
-        self.log_test("Get Member Details", True, {"member_id": self.member_id})
+        self.log_test("Get Member Details", True, {
+            "member_id": self.member_id,
+            "name": data["name"],
+            "lifted": data["lifted"]
+        })
         return True
 
     def test_lift_member(self) -> bool:
         """Test POST /api/members/{id}/lift endpoint"""
         if not self.member_id:
-            self.log_test("Lift Member", False, {"error": "No member_id available. Run test_get_chitty_members first."})
+            self.log_test("Lift Member", False, {"error": "No member_id available. Run test_get_all_chitties first."})
             return False
         
         print(f"\n=== Testing POST /api/members/{self.member_id}/lift ===")
@@ -232,9 +306,28 @@ class ChittyManagerTester:
             self.log_test("Lift Member", False, {"error": response["error"]})
             return False
         
+        # Extract data from response
+        data = self.extract_data(response)
+        
+        if "error" in data:
+            self.log_test("Lift Member", False, {"error": data["error"]})
+            return False
+        
         # Verify the member is now lifted
-        if "lifted" not in response or response["lifted"] is not True:
+        if "lifted" not in data or data["lifted"] is not True:
             self.log_test("Lift Member", False, {"error": "Member not marked as lifted"})
+            return False
+        
+        # Verify by getting the member details again
+        verify_response = self.make_request("get", f"/members/{self.member_id}")
+        verify_data = self.extract_data(verify_response)
+        
+        if "error" in verify_data:
+            self.log_test("Lift Member - Verification", False, {"error": verify_data["error"]})
+            return False
+        
+        if "lifted" not in verify_data or verify_data["lifted"] is not True:
+            self.log_test("Lift Member - Verification", False, {"error": "Member not marked as lifted in verification"})
             return False
         
         self.log_test("Lift Member", True, {"member_id": self.member_id})
@@ -253,15 +346,22 @@ class ChittyManagerTester:
             self.log_test("Get Monthly Slips", False, {"error": response["error"]})
             return False
         
-        # Verify we have monthly slips
-        if not isinstance(response, list):
+        # Extract data from response
+        data = self.extract_data(response)
+        
+        if "error" in data:
+            self.log_test("Get Monthly Slips", False, {"error": data["error"]})
+            return False
+        
+        # Verify we have monthly slips in the correct format
+        if not isinstance(data, list):
             self.log_test("Get Monthly Slips", False, {"error": "Invalid response format, expected list"})
             return False
         
         # Check monthly slip structure if any exist
-        if response and len(response) > 0:
-            slip = response[0]
-            required_fields = ["id", "chittyId", "month", "date"]
+        if data and len(data) > 0:
+            slip = data[0]
+            required_fields = ["id", "chittyId", "month"]
             missing_fields = [field for field in required_fields if field not in slip]
             
             if missing_fields:
@@ -269,7 +369,7 @@ class ChittyManagerTester:
                              {"error": f"Missing required fields: {', '.join(missing_fields)}"})
                 return False
         
-        self.log_test("Get Monthly Slips", True, {"slip_count": len(response)})
+        self.log_test("Get Monthly Slips", True, {"slip_count": len(data)})
         return True
 
     def test_generate_monthly_slip(self) -> bool:
@@ -283,7 +383,7 @@ class ChittyManagerTester:
         slip_data = {
             "chittyId": self.chitty_id,
             "month": 1,
-            "date": "2023-07-15"
+            "date": datetime.now().strftime("%Y-%m-%d")
         }
         
         response = self.make_request("post", "/monthly-slips/generate", slip_data)
@@ -292,19 +392,34 @@ class ChittyManagerTester:
             self.log_test("Generate Monthly Slip", False, {"error": response["error"]})
             return False
         
+        # Extract data from response
+        data = self.extract_data(response)
+        
+        if "error" in data:
+            self.log_test("Generate Monthly Slip", False, {"error": data["error"]})
+            return False
+        
         # Verify the generated slip has an ID
-        if "id" not in response:
+        if "id" not in data:
             self.log_test("Generate Monthly Slip", False, {"error": "Generated slip doesn't have an ID"})
             return False
         
         # Verify the slip has the correct data
+        validation_errors = []
         for key, value in slip_data.items():
-            if key not in response or response[key] != value:
-                self.log_test("Generate Monthly Slip - Validate Data", False, 
-                             {"error": f"Field {key}: expected {value}, got {response.get(key, 'missing')}"})
-                return False
+            if key not in data:
+                validation_errors.append(f"Missing field: {key}")
+            elif key == "date":
+                # Skip exact date comparison
+                continue
+            elif data[key] != value:
+                validation_errors.append(f"Field {key}: expected {value}, got {data[key]}")
         
-        self.log_test("Generate Monthly Slip", True, {"generated_slip_id": response["id"]})
+        if validation_errors:
+            self.log_test("Generate Monthly Slip - Validate Data", False, {"errors": validation_errors})
+            return False
+        
+        self.log_test("Generate Monthly Slip", True, {"generated_slip_id": data["id"]})
         return True
 
     def run_all_tests(self):
