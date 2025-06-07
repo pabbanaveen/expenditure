@@ -14,7 +14,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/members")
-@Api(value = "Member Management", description = "Operations related to member management")
+@Tag(name = "Member Management", description = "Operations related to member management")
 public class MemberController {
 
     @Autowired
