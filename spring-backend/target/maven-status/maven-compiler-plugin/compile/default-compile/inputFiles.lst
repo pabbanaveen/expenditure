@@ -1,3 +1,4 @@
+/app/spring-backend/src/main/java/com/chittimanager/config/OpenApiConfig.java
 /app/spring-backend/src/main/java/com/chittimanager/model/Member.java
 /app/spring-backend/src/main/java/com/chittimanager/service/DataInitializationService.java
 /app/spring-backend/src/main/java/com/chittimanager/service/ChittiService.java
@@ -6,11 +7,10 @@
 /app/spring-backend/src/main/java/com/chittimanager/controller/MemberController.java
 /app/spring-backend/src/main/java/com/chittimanager/controller/MonthlySlipController.java
 /app/spring-backend/src/main/java/com/chittimanager/service/MonthlySlipService.java
-/app/spring-backend/src/main/java/com/chittimanager/service/MemberService.java
 /app/spring-backend/src/main/java/com/chittimanager/ChittiManagerApplication.java
+/app/spring-backend/src/main/java/com/chittimanager/service/MemberService.java
 /app/spring-backend/src/main/java/com/chittimanager/config/CorsConfig.java
 /app/spring-backend/src/main/java/com/chittimanager/model/MonthlySlip.java
-/app/spring-backend/src/main/java/com/chittimanager/config/SwaggerConfig.java
 /app/spring-backend/src/main/java/com/chittimanager/controller/ChittiController.java
 /app/spring-backend/src/main/java/com/chittimanager/model/Payment.java
 /app/spring-backend/src/main/java/com/chittimanager/repository/MonthlySlipRepository.java
